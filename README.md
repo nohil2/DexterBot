@@ -1,1 +1,1 @@
-# dexter-bot
+# DexterBot
