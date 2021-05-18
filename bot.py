@@ -1,6 +1,8 @@
 import os
 import discord
 import requests
+import json
+import ast
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -29,8 +31,9 @@ async def api_test(ctx):
     await ctx.send("Attempted.")
     await ctx.send(response.status_code)
     if response.status_code == 200:
-        #j = response.json() need to fix json parsing
-        #await ctx.send(j.name) 
+        text = json.dumps(response.json(), sort_keys=True)
+        data = ast.literal_eval(text)
+        await ctx.send(data.keys())
         await ctx.send("Success.")
     elif response.status_code > 400:
         await ctx.send('Connection failed.')
@@ -47,7 +50,7 @@ async def echo(ctx):
 async def quit(ctx):
     response = 'Shutting down...'
     await ctx.send(response)
-    await bot.logout()
+    await bot.close()
 
 # run bot
 bot.run(TOKEN)
