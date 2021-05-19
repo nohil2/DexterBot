@@ -2,7 +2,6 @@ import os
 import discord
 import requests
 import json
-import ast
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -20,33 +19,31 @@ async def on_ready():
 
 
 # Commands
-@bot.command(name='hb')
+@bot.command(name='ping')
 async def happy_birthday(ctx):
-    response = 'Happy Birthday! 🎈🎉'
+    response = 'Ready to go!'
     await ctx.send(response)
 
 @bot.command(name='api')
 async def api_test(ctx):
-    response = requests.get('https://pokeapi.co/api/v2/berry/1')
-    await ctx.send("Attempted.")
-    await ctx.send(response.status_code)
+    response = requests.get('https://pokeapi.co/api/v2/pokemon/1')
     if response.status_code == 200:
-        text = json.dumps(response.json(), sort_keys=True)
-        data = ast.literal_eval(text)
-        await ctx.send(data.keys())
-        await ctx.send("Success.")
+        data = json.loads(response.text)
+        temp = data.get('types')
+        await ctx.send(data.get('name').capitalize())
+        await ctx.send(temp[0]['type']['name'].capitalize()+' / '+temp[1]['type']['name'].capitalize())
     elif response.status_code > 400:
         await ctx.send('Connection failed.')
         await ctx.send('Status code: ', response.status_code)
 
-@bot.command(name='echo')
-async def echo(ctx):
-    response = ctx.message.content.replace(ctx.message.content.split()[0] + " ", '')
-    await ctx.send(response)
+# @bot.command(name='echo')
+# async def echo(ctx):
+#     response = ctx.message.content.replace(ctx.message.content.split()[0] + " ", '')
+#     await ctx.send(response)
 
 
 # Shut down
-@bot.command(name='quit')
+@bot.command(name='q')
 async def quit(ctx):
     response = 'Shutting down...'
     await ctx.send(response)
