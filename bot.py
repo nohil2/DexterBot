@@ -2,6 +2,7 @@ import os
 import discord
 import requests
 import json
+import re
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -20,18 +21,23 @@ async def on_ready():
 
 # Commands
 @bot.command(name='ping')
-async def happy_birthday(ctx):
+async def ping(ctx):
     response = 'Ready to go!'
     await ctx.send(response)
 
 @bot.command(name='api')
 async def api_test(ctx):
     response = requests.get('https://pokeapi.co/api/v2/pokemon/1')
-    if response.status_code == 200:
+    response2 = requests.get('https://pokeapi.co/api/v2/pokemon-species/1')
+    if response.status_code == 200 and response2.status_code == 200:
         data = json.loads(response.text)
+        data2 = json.loads(response2.text)
         temp = data.get('types')
-        await ctx.send(data.get('name').capitalize())
+        temp2 = data2.get('flavor_text_entries')
+        await ctx.send(data['name'].capitalize())
         await ctx.send(temp[0]['type']['name'].capitalize()+' / '+temp[1]['type']['name'].capitalize())
+        await ctx.send(temp2[0]['flavor_text'].replace('\n', ' ').replace('\x0c', ' '))
+        await ctx.send(data['sprites']['other']['official-artwork']['front_default'])
     elif response.status_code > 400:
         await ctx.send('Connection failed.')
         await ctx.send('Status code: ', response.status_code)
