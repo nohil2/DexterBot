@@ -1,4 +1,5 @@
 from asyncio.windows_events import NULL
+from logging import addLevelName
 import os
 import discord
 import requests
@@ -25,11 +26,25 @@ async def ping(ctx):
     response = 'Ready to go!'
     await ctx.send(response)
 
-@bot.command(name='api')
-async def api_test(ctx):
-    response = requests.get('https://pokeapi.co/api/v2/pokemon/1')
-    response_species = requests.get('https://pokeapi.co/api/v2/pokemon-species/1')
-    if response.status_code == 200 and response_species.status_code == 200:
+@bot.command(name='dex')
+async def pokemon_search(ctx):
+    search_term = ctx.message.content.replace(ctx.message.content.split()[0] + " ", '')
+    if search_term.isnumeric():
+        if int(search_term) > 898:
+            await ctx.send("There's no Pokemon with that Dex Number; try again.")
+        response = requests.get('https://pokeapi.co/api/v2/pokemon/'+search_term)
+        response_species = requests.get('https://pokeapi.co/api/v2/pokemon-species/'+search_term)
+    else:
+        response = requests.get('https://pokeapi.co/api/v2/pokemon/'+search_term.lower())
+        response_species = requests.get('https://pokeapi.co/api/v2/pokemon-species/'+search_term.lower())
+    if response.status_code > 400 and response_species.status_code > 400:
+         if response.status_code == 404:
+            await ctx.send('No Pokemon with that name; try again.')
+         else:
+             await ctx.send('Connection failed.')
+             fail_string = 'Status codes: '+str(response.status_code)+', '+str(response_species.status_code)
+             await ctx.send(fail_string)
+    elif response.status_code == 200 and response_species.status_code == 200:
         jsondata = json.loads(response.text)
         jsondata_species = json.loads(response_species.text)
 
@@ -41,13 +56,13 @@ async def api_test(ctx):
 
         num_types = 0
         for x in pokemon_types:
-            num_types+=1
+             num_types+=1
 
         if num_types == 2: 
             types = pokemon_types[0]['type']['name'].capitalize()+' / '+pokemon_types[1]['type']['name'].capitalize()
         elif num_types == 1:
             types = pokemon_types[0]['type']['name'].capitalize()
-        types = '*'+types+'*'
+        types = types
 
         image = jsondata['sprites']['other']['official-artwork']['front_default']
 
@@ -61,16 +76,6 @@ async def api_test(ctx):
         await ctx.send(types)
         await ctx.send(dex_text)
         await ctx.send(image)
-
-    elif response.status_code > 400:
-        await ctx.send('Connection failed.')
-        fail_string = 'Status codes: '+str(response.status_code)+', '+str(response_species.status_code)
-        await ctx.send(fail_string)
-
-# @bot.command(name='echo')
-# async def echo(ctx):
-#     response = ctx.message.content.replace(ctx.message.content.split()[0] + " ", '')
-#     await ctx.send(response)
 
 
 # Shut down
