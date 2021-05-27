@@ -53,7 +53,8 @@ async def pokemon_search(ctx):
         dex_entries = jsondata_species.get('flavor_text_entries')
 
         name = jsondata['name'].capitalize()
-        name = '**'+name+'**'
+        dex_number = str(jsondata_species['pokedex_numbers'][0]['entry_number'])
+        name = '**'+name+'\t#'+dex_number+'**'
 
         num_types = 0
         for x in pokemon_types:
@@ -98,7 +99,8 @@ async def random_pokemon(ctx):
         dex_entries = jsondata_species.get('flavor_text_entries')
 
         name = jsondata['name'].capitalize()
-        name = '**'+name+'**'
+        dex_number = str(jsondata_species['pokedex_numbers'][0]['entry_number'])
+        name = '**'+name+'\t#'+dex_number+'**'
 
         num_types = 0
         for x in pokemon_types:
