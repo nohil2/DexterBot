@@ -1,8 +1,8 @@
+from asyncio.windows_events import NULL
 import os
 import discord
 import requests
 import json
-import re
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -28,19 +28,44 @@ async def ping(ctx):
 @bot.command(name='api')
 async def api_test(ctx):
     response = requests.get('https://pokeapi.co/api/v2/pokemon/1')
-    response2 = requests.get('https://pokeapi.co/api/v2/pokemon-species/1')
-    if response.status_code == 200 and response2.status_code == 200:
-        data = json.loads(response.text)
-        data2 = json.loads(response2.text)
-        temp = data.get('types')
-        temp2 = data2.get('flavor_text_entries')
-        await ctx.send(data['name'].capitalize())
-        await ctx.send(temp[0]['type']['name'].capitalize()+' / '+temp[1]['type']['name'].capitalize())
-        await ctx.send(temp2[0]['flavor_text'].replace('\n', ' ').replace('\x0c', ' '))
-        await ctx.send(data['sprites']['other']['official-artwork']['front_default'])
+    response_species = requests.get('https://pokeapi.co/api/v2/pokemon-species/1')
+    if response.status_code == 200 and response_species.status_code == 200:
+        jsondata = json.loads(response.text)
+        jsondata_species = json.loads(response_species.text)
+
+        pokemon_types = jsondata.get('types')
+        dex_entries = jsondata_species.get('flavor_text_entries')
+
+        name = jsondata['name'].capitalize()
+        name = '**'+name+'**'
+
+        num_types = 0
+        for x in pokemon_types:
+            num_types+=1
+
+        if num_types == 2: 
+            types = pokemon_types[0]['type']['name'].capitalize()+' / '+pokemon_types[1]['type']['name'].capitalize()
+        elif num_types == 1:
+            types = pokemon_types[0]['type']['name'].capitalize()
+        types = '*'+types+'*'
+
+        image = jsondata['sprites']['other']['official-artwork']['front_default']
+
+        for entry in dex_entries:
+            if entry['language']['name'] == 'en':
+                dex_text = entry['flavor_text'].replace('\n', ' ').replace('\x0c', ' ')
+                break
+        dex_text = '```'+dex_text+'```'
+
+        await ctx.send(name)
+        await ctx.send(types)
+        await ctx.send(dex_text)
+        await ctx.send(image)
+
     elif response.status_code > 400:
         await ctx.send('Connection failed.')
-        await ctx.send('Status code: ', response.status_code)
+        fail_string = 'Status codes: '+str(response.status_code)+', '+str(response_species.status_code)
+        await ctx.send(fail_string)
 
 # @bot.command(name='echo')
 # async def echo(ctx):
