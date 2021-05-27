@@ -4,6 +4,7 @@ import os
 import discord
 import requests
 import json
+import random as rand
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -41,9 +42,9 @@ async def pokemon_search(ctx):
          if response.status_code == 404:
             await ctx.send('No Pokemon with that name; try again.')
          else:
-             await ctx.send('Connection failed.')
-             fail_string = 'Status codes: '+str(response.status_code)+', '+str(response_species.status_code)
-             await ctx.send(fail_string)
+            await ctx.send('Connection failed.')
+            fail_string = 'Status codes: '+str(response.status_code)+', '+str(response_species.status_code)
+            await ctx.send(fail_string)
     elif response.status_code == 200 and response_species.status_code == 200:
         jsondata = json.loads(response.text)
         jsondata_species = json.loads(response_species.text)
@@ -77,6 +78,50 @@ async def pokemon_search(ctx):
         await ctx.send(dex_text)
         await ctx.send(image)
 
+@bot.command(name='rdex')
+async def random_pokemon(ctx):
+    rand.seed()
+    random_num = str(rand.randint(1, 898))
+    
+    response = requests.get('https://pokeapi.co/api/v2/pokemon/'+random_num)
+    response_species = requests.get('https://pokeapi.co/api/v2/pokemon-species/'+random_num)
+
+    if response.status_code > 400 and response_species.status_code > 400:
+        await ctx.send('Connection failed.')
+        fail_string = 'Status codes: '+str(response.status_code)+', '+str(response_species.status_code)
+        await ctx.send(fail_string)
+    elif response.status_code == 200 and response_species.status_code == 200:
+        jsondata = json.loads(response.text)
+        jsondata_species = json.loads(response_species.text)
+
+        pokemon_types = jsondata.get('types')
+        dex_entries = jsondata_species.get('flavor_text_entries')
+
+        name = jsondata['name'].capitalize()
+        name = '**'+name+'**'
+
+        num_types = 0
+        for x in pokemon_types:
+             num_types+=1
+
+        if num_types == 2: 
+            types = pokemon_types[0]['type']['name'].capitalize()+' / '+pokemon_types[1]['type']['name'].capitalize()
+        elif num_types == 1:
+            types = pokemon_types[0]['type']['name'].capitalize()
+        types = types
+
+        image = jsondata['sprites']['other']['official-artwork']['front_default']
+
+        for entry in dex_entries:
+            if entry['language']['name'] == 'en':
+                dex_text = entry['flavor_text'].replace('\n', ' ').replace('\x0c', ' ')
+                break
+        dex_text = '```'+dex_text+'```'
+
+        await ctx.send(name)
+        await ctx.send(types)
+        await ctx.send(dex_text)
+        await ctx.send(image)
 
 # Shut down
 @bot.command(name='q')
