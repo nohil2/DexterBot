@@ -1,5 +1,3 @@
-from asyncio.windows_events import NULL
-from logging import addLevelName
 import os
 import discord
 import requests
