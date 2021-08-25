@@ -4,6 +4,7 @@ import requests
 import json
 import random as rand
 from PIL import Image
+from io import BytesIO
 
 
 from dotenv import load_dotenv
@@ -162,12 +163,12 @@ async def wtp(ctx):
         alpha = image.getchannel('A')
         silhouette = Image.new('RGBA', image.size, color='black')
         silhouette.putalpha(alpha)
-        silhouette.save("silhouette.png")
+        tempfile = BytesIO()
+        silhouette.save(tempfile, format='png')
 
         await ctx.send("**Who's that Pokemon?**")
-        await ctx.send(file=discord.File('silhouette.png'))
-        os.remove("silhouette.png")
-        #print(name)
+        tempfile.seek(0)
+        await ctx.send(file=discord.File(tempfile, 'silhouette.png'))
 
         def check(message):
             return name in message.content.lower() and message.channel == ctx.channel
