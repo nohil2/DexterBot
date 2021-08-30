@@ -1,3 +1,4 @@
+import asyncio
 import os
 import discord
 import requests
@@ -147,6 +148,7 @@ async def wtp(ctx):
     """
     Who's that Pokemon?
     """
+    #checks if command is already running
     global wtp_lock
     if wtp_lock == True:
         return
@@ -176,6 +178,8 @@ async def wtp(ctx):
         await ctx.send("**Who's that Pokemon?**")
         tempfile.seek(0)
         await ctx.send(file=discord.File(tempfile, 'silhouette.png'))
+        image.close()
+        silhouette.close()
         start_time = time.time()
 
         def check(message):
@@ -191,13 +195,22 @@ async def wtp(ctx):
 
 # Shut down
 @bot.command(name='q')
+@commands.has_permissions(administrator=True)
 async def quit(ctx):
     """
     Shuts down Dexter Bot
     """
     response = 'Shutting down...'
     await ctx.send(response)
+
+    #Shut down
+    loop = bot.loop
     await bot.close()
+    await loop.stop()
+    pending = asyncio.Task.all_tasks()
+    await loop.run_until_complete(asyncio.gather(*pending))
+    bot.close()
+    raise SystemExit
 
 # run bot
 bot.run(TOKEN)
