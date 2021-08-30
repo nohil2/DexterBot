@@ -5,11 +5,13 @@ import json
 import random as rand
 from PIL import Image
 from io import BytesIO
-
+import time
 
 from dotenv import load_dotenv
 from discord.ext import commands
 
+
+wtp_lock = False
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -23,7 +25,7 @@ async def on_ready():
 
 
 # Commands
-@bot.command(name='ping')
+@bot.command()
 async def ping(ctx):
     """
     Ping
@@ -140,12 +142,17 @@ async def random_pokemon(ctx):
         await ctx.send(dex_text)
         await ctx.send(image)
 
-@bot.command(name='wtp')
+@bot.command()
 async def wtp(ctx):
     """
     Who's that Pokemon?
     """
-    
+    global wtp_lock
+    if wtp_lock == True:
+        return
+    else:
+        wtp_lock = True
+
     rand.seed()
     random_num = str(rand.randint(1, 898))
     
@@ -169,13 +176,17 @@ async def wtp(ctx):
         await ctx.send("**Who's that Pokemon?**")
         tempfile.seek(0)
         await ctx.send(file=discord.File(tempfile, 'silhouette.png'))
+        start_time = time.time()
 
         def check(message):
             return name in message.content.lower() and message.channel == ctx.channel
         
         msg = await bot.wait_for("message", check=check)
-        await ctx.send(f"{msg.author.mention} got it right! It's {name.capitalize()}!")
+        total_time = time.time() - start_time
+        await ctx.send(f"{msg.author.mention} got it right in **{total_time:.2f} seconds!** It's **{name.capitalize()}!**")
         await ctx.send(image_url)
+
+    wtp_lock = False
 
 
 # Shut down
