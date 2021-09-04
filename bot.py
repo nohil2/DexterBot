@@ -11,7 +11,7 @@ import time
 from dotenv import load_dotenv
 from discord.ext import commands
 
-
+# global values
 wtp_lock = False
 
 load_dotenv()
@@ -19,20 +19,23 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 bot = commands.Bot(command_prefix='!')
 
-# On join
+# on join
 @bot.event
 async def on_ready():
     print(f'{bot.user} connected to Discord.')
 
 
-# Commands
+# commands
 @bot.command()
 async def ping(ctx):
     """
     Ping
     """
     response = 'Ready to go!'
-    await ctx.send(response)
+    await ctx.send(response, delete_after=10)
+
+
+
 
 @bot.command(name='dex')
 async def pokemon_search(ctx):
@@ -40,7 +43,8 @@ async def pokemon_search(ctx):
     Search for a Pokedex entry
 
     Dexter Bot looks up a Pokemon based on your input, by either National Dex number or name
-    """
+    """ 
+
     search_term = ctx.message.content.replace(ctx.message.content.split()[0] + " ", '')
     if search_term.isnumeric():
         if int(search_term) > 898:
@@ -64,10 +68,12 @@ async def pokemon_search(ctx):
         pokemon_types = jsondata.get('types')
         dex_entries = jsondata_species.get('flavor_text_entries')
 
+        # get pokemon name and national dex number 
         name = jsondata['name'].capitalize()
         dex_number = str(jsondata_species['pokedex_numbers'][0]['entry_number'])
         name = '**'+name+'\t#'+dex_number+'**'
 
+        # get pokemon types
         num_types = 0
         for x in pokemon_types:
              num_types+=1
@@ -78,14 +84,20 @@ async def pokemon_search(ctx):
             types = pokemon_types[0]['type']['name'].capitalize()
         types = types
 
+        # get official artwork
         image = jsondata['sprites']['other']['official-artwork']['front_default']
 
+        # get and choose random pokedex entry (in english)
+        temp = []
         for entry in dex_entries:
             if entry['language']['name'] == 'en':
-                dex_text = entry['flavor_text'].replace('\n', ' ').replace('\x0c', ' ')
-                break
+                temp.append(entry['flavor_text'].replace('\n', ' ').replace('\x0c', ' '))
+
+        rand.seed()
+        dex_text = rand.choice(temp)
         dex_text = '```'+dex_text+'```'
 
+        # display all of the above
         await ctx.send(name)
         await ctx.send(types)
         await ctx.send(dex_text)
@@ -132,10 +144,12 @@ async def random_pokemon(ctx):
 
         image = jsondata['sprites']['other']['official-artwork']['front_default']
 
+        temp = []
         for entry in dex_entries:
             if entry['language']['name'] == 'en':
-                dex_text = entry['flavor_text'].replace('\n', ' ').replace('\x0c', ' ')
-                break
+                temp.append(entry['flavor_text'].replace('\n', ' ').replace('\x0c', ' '))
+
+        dex_text = rand.choice(temp)
         dex_text = '```'+dex_text+'```'
 
         await ctx.send(name)
@@ -148,7 +162,7 @@ async def wtp(ctx):
     """
     Who's that Pokemon?
     """
-    #checks if command is already running
+    # check if command is already running
     global wtp_lock
     if wtp_lock == True:
         return
@@ -168,6 +182,7 @@ async def wtp(ctx):
         name = jsondata['name'].replace('-', ' ')
         image_url = jsondata['sprites']['other']['official-artwork']['front_default']
         
+        # use PIL to create silhoutte of artwork and create a byte stream of silhouette
         image = Image.open(requests.get(image_url, stream=True).raw)
         alpha = image.getchannel('A')
         silhouette = Image.new('RGBA', image.size, color='black')
@@ -182,6 +197,7 @@ async def wtp(ctx):
         silhouette.close()
         start_time = time.time()
 
+        # check channel for name of pokemon
         def check(message):
             return name in message.content.lower() and message.channel == ctx.channel
         
@@ -190,6 +206,7 @@ async def wtp(ctx):
         await ctx.send(f"{msg.author.mention} got it right in **{total_time:.2f} seconds!** It's **{name.capitalize()}!**")
         await ctx.send(image_url)
 
+    # allows command to run after finished
     wtp_lock = False
 
 
@@ -203,7 +220,7 @@ async def quit(ctx):
     response = 'Shutting down...'
     await ctx.send(response)
 
-    #Shut down
+    # shut down
     loop = bot.loop
     await bot.close()
     await loop.stop()
