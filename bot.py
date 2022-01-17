@@ -107,7 +107,8 @@ async def pokemon_search(ctx):
         await ctx.send(name)
         await ctx.send(types)
         await ctx.send(dex_text)
-        await ctx.send(image)
+        tempfile.seek(0)
+        await ctx.send(file=discord.File(tempfile, 'pokemon.png'))
 
 @bot.command(name='rdex')
 async def random_pokemon(ctx):
@@ -220,6 +221,7 @@ async def wtp(ctx):
         msg = await bot.wait_for("message", check=check)
         total_time = time.time() - start_time
         await ctx.send(f"{msg.author.mention} got it right in **{total_time:.2f} seconds!** It's **{name.capitalize()}!**")
+        temp.seek(0)
         await ctx.send(file=discord.File(temp, 'pokemon.png'))
 
     # allows command to run after finished
