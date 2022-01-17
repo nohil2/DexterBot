@@ -85,7 +85,13 @@ async def pokemon_search(ctx):
         types = types
 
         # get official artwork
-        image = jsondata['sprites']['other']['official-artwork']['front_default']
+        image_url = jsondata['sprites']['other']['official-artwork']['front_default']
+        # resize image to save on screen space in chat
+        image = Image.open(requests.get(image_url, stream=True).raw)
+        image = image.resize((200,200))
+        tempfile = BytesIO()
+        image.save(tempfile, format='png')
+        image.close()
 
         # get and choose random pokedex entry (in english)
         temp = []
@@ -142,7 +148,12 @@ async def random_pokemon(ctx):
             types = pokemon_types[0]['type']['name'].capitalize()
         types = types
 
-        image = jsondata['sprites']['other']['official-artwork']['front_default']
+        image_url = jsondata['sprites']['other']['official-artwork']['front_default']
+        image = Image.open(requests.get(image_url, stream=True).raw)
+        image = image.resize((200,200))
+        tempfile = BytesIO()
+        image.save(tempfile, format='png')
+        image.close()
 
         temp = []
         for entry in dex_entries:
@@ -155,7 +166,9 @@ async def random_pokemon(ctx):
         await ctx.send(name)
         await ctx.send(types)
         await ctx.send(dex_text)
-        await ctx.send(image)
+        tempfile.seek(0)
+        await ctx.send(file=discord.File(tempfile, 'pokemon.png'))
+        
 
 @bot.command()
 async def wtp(ctx):
@@ -184,6 +197,9 @@ async def wtp(ctx):
         
         # use PIL to create silhoutte of artwork and create a byte stream of silhouette
         image = Image.open(requests.get(image_url, stream=True).raw)
+        image = image.resize((200,200))
+        temp = BytesIO()
+        image.save(temp, format='png')
         alpha = image.getchannel('A')
         silhouette = Image.new('RGBA', image.size, color='black')
         silhouette.putalpha(alpha)
@@ -204,7 +220,7 @@ async def wtp(ctx):
         msg = await bot.wait_for("message", check=check)
         total_time = time.time() - start_time
         await ctx.send(f"{msg.author.mention} got it right in **{total_time:.2f} seconds!** It's **{name.capitalize()}!**")
-        await ctx.send(image_url)
+        await ctx.send(file=discord.File(temp, 'pokemon.png'))
 
     # allows command to run after finished
     wtp_lock = False
