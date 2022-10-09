@@ -16,8 +16,9 @@ wtp_lock = False
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+intents = discord.Intents(messages=True, message_content=True, guilds=True)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
-bot = commands.Bot(command_prefix='!')
 
 # on join
 @bot.event
@@ -33,8 +34,6 @@ async def ping(ctx):
     """
     response = 'Ready to go!'
     await ctx.send(response, delete_after=10)
-
-
 
 
 @bot.command(name='dex')
@@ -110,6 +109,7 @@ async def pokemon_search(ctx):
         tempfile.seek(0)
         await ctx.send(file=discord.File(tempfile, 'pokemon.png'))
 
+
 @bot.command(name='rdex')
 async def random_pokemon(ctx):
     """
@@ -178,7 +178,7 @@ async def wtp(ctx):
     """
     # check if command is already running
     global wtp_lock
-    if wtp_lock == True:
+    if wtp_lock:
         return
     else:
         wtp_lock = True
