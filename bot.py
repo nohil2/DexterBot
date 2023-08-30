@@ -46,68 +46,69 @@ async def pokemon_search(ctx):
 
     search_term = ctx.message.content.replace(ctx.message.content.split()[0] + " ", '')
     if search_term.isnumeric():
-        if int(search_term) > 898:
-            await ctx.send("There's no Pokemon with that Dex Number; try again.")
         response = requests.get('https://pokeapi.co/api/v2/pokemon/'+search_term)
         response_species = requests.get('https://pokeapi.co/api/v2/pokemon-species/'+search_term)
+        if response.status_code > 400 and response_species.status_code > 400:
+            if response.status_code == 404:
+                await ctx.send("No Pokemon with that Dex Number; try again.")
+            else:
+                await ctx.send('Connection failed.')
+                fail_string = 'Status codes: ' + str(response.status_code) + ', ' + str(response_species.status_code)
+                await ctx.send(fail_string)
     else:
         response = requests.get('https://pokeapi.co/api/v2/pokemon/'+search_term.lower())
         response_species = requests.get('https://pokeapi.co/api/v2/pokemon-species/'+search_term.lower())
-    if response.status_code > 400 and response_species.status_code > 400:
-         if response.status_code == 404:
-            await ctx.send('No Pokemon with that name; try again.')
-         else:
-            await ctx.send('Connection failed.')
-            fail_string = 'Status codes: '+str(response.status_code)+', '+str(response_species.status_code)
-            await ctx.send(fail_string)
-    elif response.status_code == 200 and response_species.status_code == 200:
-        jsondata = json.loads(response.text)
-        jsondata_species = json.loads(response_species.text)
+        if response.status_code > 400 and response_species.status_code > 400:
+            if response.status_code == 404:
+                await ctx.send('No Pokemon with that name; try again.')
+            else:
+                await ctx.send('Connection failed.')
+                fail_string = 'Status codes: '+str(response.status_code)+', '+str(response_species.status_code)
+                await ctx.send(fail_string)
 
-        pokemon_types = jsondata.get('types')
-        dex_entries = jsondata_species.get('flavor_text_entries')
+    jsondata = json.loads(response.text)
+    jsondata_species = json.loads(response_species.text)
 
-        # get pokemon name and national dex number 
-        name = jsondata['name'].capitalize()
-        dex_number = str(jsondata_species['pokedex_numbers'][0]['entry_number'])
-        name = '**'+name+'\t#'+dex_number+'**'
+    pokemon_types = jsondata.get('types')
+    dex_entries = jsondata_species.get('flavor_text_entries')
 
-        # get pokemon types
-        num_types = 0
-        for x in pokemon_types:
-             num_types+=1
+    # get pokemon name and national dex number
+    name = jsondata['name'].capitalize()
+    dex_number = str(jsondata_species['pokedex_numbers'][0]['entry_number']).rjust(4, '0')
+    name = '**'+name+'\t#'+dex_number+'**'
 
-        if num_types == 2: 
-            types = pokemon_types[0]['type']['name'].capitalize()+' / '+pokemon_types[1]['type']['name'].capitalize()
-        elif num_types == 1:
-            types = pokemon_types[0]['type']['name'].capitalize()
-        types = types
+    # get pokemon types
+    if len(pokemon_types) == 2:
+        types = pokemon_types[0]['type']['name'].capitalize()+' / '+pokemon_types[1]['type']['name'].capitalize()
+    elif len(pokemon_types) == 1:
+        types = pokemon_types[0]['type']['name'].capitalize()
+    types = types
 
-        # get official artwork
-        image_url = jsondata['sprites']['other']['official-artwork']['front_default']
-        # resize image to save on screen space in chat
-        image = Image.open(requests.get(image_url, stream=True).raw)
-        image = image.resize((200,200))
-        tempfile = BytesIO()
-        image.save(tempfile, format='png')
-        image.close()
+    # get official artwork
+    image_url = jsondata['sprites']['other']['official-artwork']['front_default']
+    # resize image to save on screen space in chat
+    image = Image.open(requests.get(image_url, stream=True).raw)
+    image = image.resize((200, 200))
+    tempfile = BytesIO()
+    image.save(tempfile, format='png')
+    image.close()
 
-        # get and choose random pokedex entry (in english)
-        temp = []
-        for entry in dex_entries:
-            if entry['language']['name'] == 'en':
-                temp.append(entry['flavor_text'].replace('\n', ' ').replace('\x0c', ' '))
+    # get and choose random pokedex entry (in english)
+    temp = []
+    for entry in dex_entries:
+        if entry['language']['name'] == 'en':
+            temp.append(entry['flavor_text'].replace('\n', ' ').replace('\x0c', ' '))
 
-        rand.seed()
-        dex_text = rand.choice(temp)
-        dex_text = '```'+dex_text+'```'
+    rand.seed()
+    dex_text = rand.choice(temp)
+    dex_text = '```'+dex_text+'```'
 
-        # display all of the above
-        await ctx.send(name)
-        await ctx.send(types)
-        await ctx.send(dex_text)
-        tempfile.seek(0)
-        await ctx.send(file=discord.File(tempfile, 'pokemon.png'))
+    # display all of the above
+    await ctx.send(name)
+    await ctx.send(types)
+    await ctx.send(dex_text)
+    tempfile.seek(0)
+    await ctx.send(file=discord.File(tempfile, 'pokemon.png'))
 
 
 @bot.command(name='rdex')
@@ -136,22 +137,19 @@ async def random_pokemon(ctx):
         dex_entries = jsondata_species.get('flavor_text_entries')
 
         name = jsondata['name'].capitalize()
-        dex_number = str(jsondata_species['pokedex_numbers'][0]['entry_number'])
+        dex_number = str(jsondata_species['pokedex_numbers'][0]['entry_number']).rjust(4, '0')
         name = '**'+name+'\t#'+dex_number+'**'
 
-        num_types = 0
-        for x in pokemon_types:
-             num_types+=1
-
-        if num_types == 2: 
-            types = pokemon_types[0]['type']['name'].capitalize()+' / '+pokemon_types[1]['type']['name'].capitalize()
-        elif num_types == 1:
+        if len(pokemon_types) == 2:
+            types = pokemon_types[0]['type']['name'].capitalize() + ' / ' + pokemon_types[1]['type'][
+                'name'].capitalize()
+        elif len(pokemon_types) == 1:
             types = pokemon_types[0]['type']['name'].capitalize()
         types = types
 
         image_url = jsondata['sprites']['other']['official-artwork']['front_default']
         image = Image.open(requests.get(image_url, stream=True).raw)
-        image = image.resize((200,200))
+        image = image.resize((200, 200))
         tempfile = BytesIO()
         image.save(tempfile, format='png')
         image.close()
@@ -241,10 +239,10 @@ async def quit(ctx):
     # shut down
     loop = bot.loop
     await bot.close()
-    await loop.stop()
+    loop.stop()
     pending = asyncio.Task.all_tasks()
-    await loop.run_until_complete(asyncio.gather(*pending))
-    bot.close()
+    loop.run_until_complete(asyncio.gather(*pending))
+    await bot.close()
     raise SystemExit
 
 # run bot
